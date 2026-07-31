@@ -25,10 +25,22 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     /**
      * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
      *
+     * @deprecated Use {@link getTransaction} instead, which returns a normalized, finality-based receipt. The raw Spark transfer remains available on its `transfer` property.
      * @param {string} hash - The Spark transfer's ID.
      * @returns {Promise<SparkTransfer | null>} The Spark transfer, or null if not found.
      */
     getTransactionReceipt(hash: string): Promise<SparkTransfer | null>;
+    /**
+     * Returns a normalized, finality-based receipt for a Spark transfer. Only resolves Spark transfers, not on-chain Bitcoin transactions.
+     *
+     * @param {string} hash - The Spark transfer's ID.
+     * @returns {Promise<SparkTransactionInfo | null>} The normalized receipt, or null if the transfer is not known.
+     */
+    getTransaction(hash: string): Promise<SparkTransactionInfo | null>;
+    /** @protected @type {number} */
+    protected get _defaultWaitInterval(): number;
+    /** @protected @type {number} */
+    protected get _defaultWaitTimeout(): number;
     /**
      * Returns the account's identity public key.
      *
@@ -94,6 +106,10 @@ export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult
 export type TransferOptions = import("@tetherto/wdk-wallet").TransferOptions;
 export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkScanConfig = import("./libs/sparkscan-client.js").SparkScanConfig;
+export type TransactionReceipt = import("@tetherto/wdk-wallet").TransactionReceipt;
+export type SparkTransactionInfo = TransactionReceipt & {
+    transfer: SparkTransfer | null;
+};
 export type SparkTransaction = {
     /**
      * - The transaction's recipient.

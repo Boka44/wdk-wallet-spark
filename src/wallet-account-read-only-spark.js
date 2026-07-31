@@ -35,8 +35,21 @@ import { SparkScanClient } from '#libs/sparkscan-client'
 /** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
 /** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
+/** @typedef {import('@tetherto/wdk-wallet').TransactionReceipt} TransactionReceipt */
 
 /** @typedef {import('./libs/sparkscan-client.js').SparkScanConfig} SparkScanConfig */
+
+/**
+ * A normalized Spark transaction receipt, extended with the native Spark transfer.
+ *
+ * @typedef {TransactionReceipt & {
+ *   transfer: SparkTransfer | null
+ * }} SparkTransactionInfo
+ */
+
+const TRANSFER_STATUS_COMPLETED = 5
+const TRANSFER_STATUS_EXPIRED = 6
+const TRANSFER_STATUS_RETURNED = 7
 
 /**
  * @typedef {Object} SparkTransaction
@@ -156,12 +169,50 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   /**
    * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
    *
+   * @deprecated Use {@link getTransaction} instead, which returns a normalized, finality-based receipt. The raw Spark transfer remains available on its `transfer` property.
    * @param {string} hash - The Spark transfer's ID.
    * @returns {Promise<SparkTransfer | null>} The Spark transfer, or null if not found.
    */
   async getTransactionReceipt (hash) {
     const transfers = await this._client.getTransfersByIds([hash])
     return transfers.length > 0 ? transfers[0] : null
+  }
+
+  /**
+   * Returns a normalized, finality-based receipt for a Spark transfer. Only resolves Spark transfers, not on-chain Bitcoin transactions.
+   *
+   * @param {string} hash - The Spark transfer's ID.
+   * @returns {Promise<SparkTransactionInfo | null>} The normalized receipt, or null if the transfer is not known.
+   */
+  async getTransaction (hash) {
+    const transfers = await this._client.getTransfersByIds([hash])
+
+    if (transfers.length === 0) {
+      return null
+    }
+
+    const transfer = transfers[0]
+    const settled = transfer.status === TRANSFER_STATUS_COMPLETED ||
+      transfer.status === TRANSFER_STATUS_EXPIRED ||
+      transfer.status === TRANSFER_STATUS_RETURNED
+
+    return {
+      id: hash,
+      finality: settled ? 'final' : 'pending',
+      success: settled ? transfer.status === TRANSFER_STATUS_COMPLETED : null,
+      fee: 0n,
+      transfer
+    }
+  }
+
+  /** @protected @type {number} */
+  get _defaultWaitInterval () {
+    return 2000
+  }
+
+  /** @protected @type {number} */
+  get _defaultWaitTimeout () {
+    return 60000
   }
 
   /**

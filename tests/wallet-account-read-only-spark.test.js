@@ -157,6 +157,65 @@ describe('WalletAccountReadOnlySpark', () => {
     })
   })
 
+  describe('getTransaction', () => {
+    const DUMMY_TRANSFER_ID = 'dummy-transfer-id'
+
+    test('should return null when the transfer is not known', async () => {
+      mockClient.getTransfersByIds.mockResolvedValue([])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(mockClient.getTransfersByIds).toHaveBeenCalledWith([DUMMY_TRANSFER_ID])
+      expect(info).toBeNull()
+    })
+
+    test('should report pending for an in-progress transfer', async () => {
+      const transfer = { id: DUMMY_TRANSFER_ID, status: 1 }
+      mockClient.getTransfersByIds.mockResolvedValue([transfer])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(info).toMatchObject({
+        id: DUMMY_TRANSFER_ID,
+        finality: 'pending',
+        success: null,
+        fee: 0n,
+        transfer
+      })
+    })
+
+    test('should report final and successful for a completed transfer', async () => {
+      const transfer = { id: DUMMY_TRANSFER_ID, status: 5 }
+      mockClient.getTransfersByIds.mockResolvedValue([transfer])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(info).toMatchObject({
+        finality: 'final',
+        success: true,
+        transfer
+      })
+    })
+
+    test('should report final and unsuccessful for an expired transfer', async () => {
+      mockClient.getTransfersByIds.mockResolvedValue([{ id: DUMMY_TRANSFER_ID, status: 6 }])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(info.finality).toBe('final')
+      expect(info.success).toBe(false)
+    })
+
+    test('should report final and unsuccessful for a returned transfer', async () => {
+      mockClient.getTransfersByIds.mockResolvedValue([{ id: DUMMY_TRANSFER_ID, status: 7 }])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(info.finality).toBe('final')
+      expect(info.success).toBe(false)
+    })
+  })
+
   describe('verify', () => {
     const MESSAGE = 'Dummy message to sign.'
     const SIGNATURE = '304402206aeb89509bda36572e2f042e9fb6b04bf3c759c0473c6d0e683143680bb363ad02207bd0e9dd8ff98a9a15962722904c71dd074c83ce8717d67d31b1010a4e9c6de6'

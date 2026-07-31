@@ -23,6 +23,7 @@ export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult
 export type TransferOptions = import("@tetherto/wdk-wallet").TransferOptions;
 export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = import("./src/wallet-account-read-only-spark.js").SparkTransaction;
+export type SparkTransactionInfo = import("./src/wallet-account-read-only-spark.js").SparkTransactionInfo;
 export type SparkWalletConfig = import("./src/wallet-account-read-only-spark.js").SparkWalletConfig;
 export type GetTransfersOptions = import("./src/wallet-account-read-only-spark.js").GetTransfersOptions;
 export type QueryDepositAddressesParams = import("@buildonspark/spark-sdk").QueryDepositAddressesParams;

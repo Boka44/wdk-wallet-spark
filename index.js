@@ -37,6 +37,7 @@
 /** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
 
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
+/** @typedef {import('./src/wallet-account-read-only-spark.js').SparkTransactionInfo} SparkTransactionInfo */
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
 /** @typedef {import('./src/wallet-account-read-only-spark.js').GetTransfersOptions} GetTransfersOptions */
