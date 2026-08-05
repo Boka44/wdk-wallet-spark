@@ -178,7 +178,7 @@ describe('WalletAccountReadOnlySpark', () => {
       expect(info).toMatchObject({
         id: DUMMY_TRANSFER_ID,
         finality: 'pending',
-        success: null,
+        success: undefined,
         fee: 0n,
         transfer
       })
