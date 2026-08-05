@@ -197,7 +197,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
       transfer.status === TRANSFER_STATUS_RETURNED
 
     return {
-      id: hash,
+      hash,
       finality: settled ? 'final' : 'pending',
       success: settled ? transfer.status === TRANSFER_STATUS_COMPLETED : undefined,
       fee: 0n,

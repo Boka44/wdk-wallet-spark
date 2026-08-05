@@ -176,7 +176,7 @@ describe('WalletAccountReadOnlySpark', () => {
       const info = await account.getTransaction(DUMMY_TRANSFER_ID)
 
       expect(info).toMatchObject({
-        id: DUMMY_TRANSFER_ID,
+        hash: DUMMY_TRANSFER_ID,
         finality: 'pending',
         success: undefined,
         fee: 0n,
