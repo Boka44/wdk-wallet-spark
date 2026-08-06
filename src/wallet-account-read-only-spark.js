@@ -14,7 +14,7 @@
 
 'use strict'
 
-import { WalletAccountReadOnly } from '@tetherto/wdk-wallet'
+import { WalletAccountReadOnly, NoSuchElementError } from '@tetherto/wdk-wallet'
 
 import { secp256k1 as curvesSecp256k1 } from '@noble/curves/secp256k1'
 import { hexToBytes } from '@noble/curves/utils'
@@ -182,13 +182,14 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * Returns a normalized, finality-based receipt for a Spark transfer. Only resolves Spark transfers, not on-chain Bitcoin transactions.
    *
    * @param {string} hash - The Spark transfer's ID.
-   * @returns {Promise<SparkTransactionInfo | null>} The normalized receipt, or null if the transfer is not known.
+   * @returns {Promise<SparkTransactionInfo>} The normalized receipt.
+   * @throws {NoSuchElementError} If no transfer has been found for the given hash.
    */
   async getTransaction (hash) {
     const transfers = await this._client.getTransfersByIds([hash])
 
     if (transfers.length === 0) {
-      return null
+      throw new NoSuchElementError(`No transfer found for '${hash}'.`)
     }
 
     const transfer = transfers[0]

@@ -1,5 +1,6 @@
 import { describe, beforeEach, expect, jest, test } from '@jest/globals'
 import * as sparkSdk from '#libs/spark-sdk'
+import { NoSuchElementError } from '@tetherto/wdk-wallet'
 
 const ADDRESS = 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47'
 
@@ -160,13 +161,11 @@ describe('WalletAccountReadOnlySpark', () => {
   describe('getTransaction', () => {
     const DUMMY_TRANSFER_ID = 'dummy-transfer-id'
 
-    test('should return null when the transfer is not known', async () => {
+    test('should throw NoSuchElementError when the transfer is not known', async () => {
       mockClient.getTransfersByIds.mockResolvedValue([])
 
-      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
-
+      await expect(account.getTransaction(DUMMY_TRANSFER_ID)).rejects.toThrow(NoSuchElementError)
       expect(mockClient.getTransfersByIds).toHaveBeenCalledWith([DUMMY_TRANSFER_ID])
-      expect(info).toBeNull()
     })
 
     test('should report pending for an in-progress transfer', async () => {

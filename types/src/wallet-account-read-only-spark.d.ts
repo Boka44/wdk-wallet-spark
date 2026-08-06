@@ -34,9 +34,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * Returns a normalized, finality-based receipt for a Spark transfer. Only resolves Spark transfers, not on-chain Bitcoin transactions.
      *
      * @param {string} hash - The Spark transfer's ID.
-     * @returns {Promise<SparkTransactionInfo | null>} The normalized receipt, or null if the transfer is not known.
+     * @returns {Promise<SparkTransactionInfo>} The normalized receipt.
+     * @throws {NoSuchElementError} If no transfer has been found for the given hash.
      */
-    getTransaction(hash: string): Promise<SparkTransactionInfo | null>;
+    getTransaction(hash: string): Promise<SparkTransactionInfo>;
     /** @protected @type {number} */
     protected get _defaultWaitInterval(): number;
     /** @protected @type {number} */
