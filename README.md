@@ -296,6 +296,8 @@ const readOnly = new WalletAccountReadOnlySpark('sp1pgs...', {
 | `getBalance()` | Returns the available (spendable) bitcoin balance in satoshis | `Promise<bigint>` |
 | `getTokenBalance(tokenAddress)` | Returns the available-to-send balance for a specific token | `Promise<bigint>` |
 | `getTransactionReceipt(hash)` | Gets a Spark transfer by its ID | `Promise<Object \| null>` |
+| `getTransaction(hash)` | Returns a normalized, finality-based transaction receipt | `Promise<SparkTransactionInfo>` |
+| `waitForTransaction(hash, options?)` | Polls until the transfer reaches the target finality (or times out) | `Promise<SparkTransactionInfo>` |
 | `getIdentityKey()` | Returns the account's identity public key | `Promise<string>` |
 | `verify(message, signature)` | Verifies a message's signature | `Promise<boolean>` |
 | `quoteSendTransaction(tx)` | Estimates transaction fee (always 0) | `Promise<{fee: bigint}>` |
@@ -345,6 +347,41 @@ const transfer = await readOnly.getTransactionReceipt('transfer-id...')
 if (transfer) {
   console.log('Spark transfer:', transfer)
 }
+```
+
+##### `getTransaction(hash)`
+Returns a normalized, finality-based receipt that maps the Spark transfer's native status onto a common cross-chain shape (`finality`, `success`, plus the raw transfer).
+
+**Parameters:**
+- `hash` (string): The Spark transfer ID
+
+**Returns:** `Promise<SparkTransactionInfo>` - The normalized receipt
+
+**Throws:** `NoSuchElementError` if no transfer is found for the given ID.
+
+**Example:**
+```javascript
+const receipt = await readOnly.getTransaction('transfer-id...')
+console.log(receipt.finality, receipt.success)
+```
+
+##### `waitForTransaction(hash, options?)`
+Polls `getTransaction` until the transfer reaches the requested finality target, then returns the terminal receipt. Only throws on timeout — callers inspect `finality`/`success` on the returned receipt rather than catching errors for failed or dropped transfers.
+
+**Parameters:**
+- `hash` (string): The Spark transfer ID
+- `options` (object, optional):
+  - `target` (string, optional): `'confirmed'` or `'final'` (default: `'confirmed'`)
+  - `timeout` (number, optional): Total time budget in ms (default: `60000`)
+  - `interval` (number, optional): Poll cadence in ms (default: `4000`)
+
+**Returns:** `Promise<SparkTransactionInfo>` - The terminal receipt once the target is reached
+
+**Throws:** `TimeoutError` if the target is not reached before the timeout.
+
+**Example:**
+```javascript
+const receipt = await readOnly.waitForTransaction('transfer-id...', { target: 'final' })
 ```
 
 ##### `getIdentityKey()`
