@@ -38,10 +38,6 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @throws {NoSuchElementError} If no transfer has been found for the given hash.
      */
     getTransaction(hash: string): Promise<SparkTransactionInfo>;
-    /** @protected @type {number} */
-    protected get _defaultWaitInterval(): number;
-    /** @protected @type {number} */
-    protected get _defaultWaitTimeout(): number;
     /**
      * Returns the account's identity public key.
      *

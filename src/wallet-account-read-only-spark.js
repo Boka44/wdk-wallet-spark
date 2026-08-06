@@ -206,16 +206,6 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     }
   }
 
-  /** @protected @type {number} */
-  get _defaultWaitInterval () {
-    return 2000
-  }
-
-  /** @protected @type {number} */
-  get _defaultWaitTimeout () {
-    return 60000
-  }
-
   /**
    * Returns the account's identity public key.
    *
