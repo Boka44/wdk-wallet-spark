@@ -36,15 +36,15 @@ import { SparkScanClient } from '#libs/sparkscan-client'
 /** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
 /** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransactionReceipt} TransactionReceipt */
+/** @typedef {import('@tetherto/wdk-wallet').WaitForTransactionOptions} WaitForTransactionOptions */
 
 /** @typedef {import('./libs/sparkscan-client.js').SparkScanConfig} SparkScanConfig */
 
 /**
- * A normalized Spark transaction receipt, extended with the native Spark transfer.
+ * The Spark-specific fields added to a normalized transaction receipt.
  *
- * @typedef {TransactionReceipt & {
- *   transfer: SparkTransfer | null
- * }} SparkTransactionInfo
+ * @typedef {Object} SparkTransactionDetails
+ * @property {SparkTransfer} transfer - The native Spark transfer.
  */
 
 const TRANSFER_STATUS_COMPLETED = 5
@@ -182,7 +182,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * Returns a normalized, finality-based receipt for a Spark transfer. Only resolves Spark transfers, not on-chain Bitcoin transactions.
    *
    * @param {string} hash - The Spark transfer's ID.
-   * @returns {Promise<SparkTransactionInfo>} The normalized receipt.
+   * @returns {Promise<TransactionReceipt & SparkTransactionDetails>} The normalized receipt.
    * @throws {NoSuchElementError} If no transfer has been found for the given hash.
    */
   async getTransaction (hash) {
@@ -204,6 +204,18 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
       fee: 0n,
       transfer
     }
+  }
+
+  /**
+   * Blocks until a transaction reaches a terminal state (the requested finality target or `dropped`), or times out.
+   *
+   * @param {string} hash - The Spark transfer's ID.
+   * @param {WaitForTransactionOptions} [options] - The wait options.
+   * @returns {Promise<TransactionReceipt & SparkTransactionDetails>} The terminal receipt: the finality target reached (inspect `success` to tell success from revert), or `dropped`.
+   * @throws {TimeoutError} If the target is not reached before the timeout.
+   */
+  async waitForTransaction (hash, options = {}) {
+    return await super.waitForTransaction(hash, options)
   }
 
   /**

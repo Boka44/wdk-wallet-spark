@@ -34,10 +34,19 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * Returns a normalized, finality-based receipt for a Spark transfer. Only resolves Spark transfers, not on-chain Bitcoin transactions.
      *
      * @param {string} hash - The Spark transfer's ID.
-     * @returns {Promise<SparkTransactionInfo>} The normalized receipt.
+     * @returns {Promise<TransactionReceipt & SparkTransactionDetails>} The normalized receipt.
      * @throws {NoSuchElementError} If no transfer has been found for the given hash.
      */
-    getTransaction(hash: string): Promise<SparkTransactionInfo>;
+    getTransaction(hash: string): Promise<TransactionReceipt & SparkTransactionDetails>;
+    /**
+     * Blocks until a transaction reaches a terminal state (the requested finality target or `dropped`), or times out.
+     *
+     * @param {string} hash - The Spark transfer's ID.
+     * @param {WaitForTransactionOptions} [options] - The wait options.
+     * @returns {Promise<TransactionReceipt & SparkTransactionDetails>} The terminal receipt: the finality target reached (inspect `success` to tell success from revert), or `dropped`.
+     * @throws {TimeoutError} If the target is not reached before the timeout.
+     */
+    waitForTransaction(hash: string, options?: WaitForTransactionOptions): Promise<TransactionReceipt & SparkTransactionDetails>;
     /**
      * Returns the account's identity public key.
      *
@@ -104,8 +113,15 @@ export type TransferOptions = import("@tetherto/wdk-wallet").TransferOptions;
 export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkScanConfig = import("./libs/sparkscan-client.js").SparkScanConfig;
 export type TransactionReceipt = import("@tetherto/wdk-wallet").TransactionReceipt;
-export type SparkTransactionInfo = TransactionReceipt & {
-    transfer: SparkTransfer | null;
+export type WaitForTransactionOptions = import("@tetherto/wdk-wallet").WaitForTransactionOptions;
+/**
+ * The Spark-specific fields added to a normalized transaction receipt.
+ */
+export type SparkTransactionDetails = {
+    /**
+     * - The native Spark transfer.
+     */
+    transfer: SparkTransfer;
 };
 export type SparkTransaction = {
     /**
