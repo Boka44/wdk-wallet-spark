@@ -196,22 +196,22 @@ describe('WalletAccountReadOnlySpark', () => {
       })
     })
 
-    test('should report final and unsuccessful for an expired transfer', async () => {
+    test('should report dropped for an expired transfer', async () => {
       mockClient.getTransfersByIds.mockResolvedValue([{ id: DUMMY_TRANSFER_ID, status: 6 }])
 
       const info = await account.getTransaction(DUMMY_TRANSFER_ID)
 
-      expect(info.finality).toBe('final')
-      expect(info.success).toBe(false)
+      expect(info.finality).toBe('dropped')
+      expect(info.success).toBeUndefined()
     })
 
-    test('should report final and unsuccessful for a returned transfer', async () => {
+    test('should report dropped for a returned transfer', async () => {
       mockClient.getTransfersByIds.mockResolvedValue([{ id: DUMMY_TRANSFER_ID, status: 7 }])
 
       const info = await account.getTransaction(DUMMY_TRANSFER_ID)
 
-      expect(info.finality).toBe('final')
-      expect(info.success).toBe(false)
+      expect(info.finality).toBe('dropped')
+      expect(info.success).toBeUndefined()
     })
   })
 

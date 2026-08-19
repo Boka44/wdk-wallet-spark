@@ -181,6 +181,9 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   /**
    * Returns a normalized, finality-based receipt for a Spark transfer. Only resolves Spark transfers, not on-chain Bitcoin transactions.
    *
+   * Note: Spark has no `confirmed` step or executed-but-reverted result — a completed
+   * transfer is `final` (success), while an expired or returned transfer is `dropped`.
+   *
    * @param {string} hash - The Spark transfer's ID.
    * @returns {Promise<TransactionReceipt & SparkTransactionDetails>} The normalized receipt.
    * @throws {NoSuchElementError} If no transfer has been found for the given hash.
@@ -193,14 +196,18 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     }
 
     const transfer = transfers[0]
-    const settled = transfer.status === TRANSFER_STATUS_COMPLETED ||
-      transfer.status === TRANSFER_STATUS_EXPIRED ||
-      transfer.status === TRANSFER_STATUS_RETURNED
+
+    let finality = 'pending'
+    if (transfer.status === TRANSFER_STATUS_COMPLETED) {
+      finality = 'final'
+    } else if (transfer.status === TRANSFER_STATUS_EXPIRED || transfer.status === TRANSFER_STATUS_RETURNED) {
+      finality = 'dropped'
+    }
 
     return {
       hash,
-      finality: settled ? 'final' : 'pending',
-      success: settled ? transfer.status === TRANSFER_STATUS_COMPLETED : undefined,
+      finality,
+      success: finality === 'final' ? true : undefined,
       fee: 0n,
       transfer
     }
@@ -208,6 +215,9 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
 
   /**
    * Blocks until a transaction reaches a terminal state (the requested finality target or `dropped`), or times out.
+   *
+   * Note: an expired or returned transfer resolves to a `dropped` receipt; a genuinely
+   * unknown transfer id stays not-found and results in a {@link TimeoutError}.
    *
    * @param {string} hash - The Spark transfer's ID.
    * @param {WaitForTransactionOptions} [options] - The wait options.
