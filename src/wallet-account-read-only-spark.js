@@ -14,7 +14,7 @@
 
 'use strict'
 
-import { WalletAccountReadOnly } from '@tetherto/wdk-wallet'
+import { WalletAccountReadOnly, NoSuchElementError } from '@tetherto/wdk-wallet'
 
 import { secp256k1 as curvesSecp256k1 } from '@noble/curves/secp256k1'
 import { hexToBytes } from '@noble/curves/utils'
@@ -35,8 +35,21 @@ import { SparkScanClient } from '#libs/sparkscan-client'
 /** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
 /** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
+/** @typedef {import('@tetherto/wdk-wallet').TransactionReceipt} TransactionReceipt */
+/** @typedef {import('@tetherto/wdk-wallet').WaitForTransactionOptions} WaitForTransactionOptions */
 
 /** @typedef {import('./libs/sparkscan-client.js').SparkScanConfig} SparkScanConfig */
+
+/**
+ * The Spark-specific fields added to a normalized transaction receipt.
+ *
+ * @typedef {Object} SparkTransactionDetails
+ * @property {SparkTransfer} transfer - The native Spark transfer.
+ */
+
+const TRANSFER_STATUS_COMPLETED = 5
+const TRANSFER_STATUS_EXPIRED = 6
+const TRANSFER_STATUS_RETURNED = 7
 
 /**
  * @typedef {Object} SparkTransaction
@@ -156,12 +169,63 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   /**
    * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
    *
+   * @deprecated Use {@link getTransaction} instead, which returns a normalized, finality-based receipt. The raw Spark transfer remains available on its `transfer` property.
    * @param {string} hash - The Spark transfer's ID.
    * @returns {Promise<SparkTransfer | null>} The Spark transfer, or null if not found.
    */
   async getTransactionReceipt (hash) {
     const transfers = await this._client.getTransfersByIds([hash])
     return transfers.length > 0 ? transfers[0] : null
+  }
+
+  /**
+   * Returns a normalized, finality-based receipt for a Spark transfer. Only resolves Spark transfers, not on-chain Bitcoin transactions.
+   *
+   * Note: Spark has no `confirmed` step or executed-but-reverted result — a completed
+   * transfer is `final` (success), while an expired or returned transfer is `dropped`.
+   *
+   * @param {string} hash - The Spark transfer's ID.
+   * @returns {Promise<TransactionReceipt & SparkTransactionDetails>} The normalized receipt.
+   * @throws {NoSuchElementError} If no transfer has been found for the given hash.
+   */
+  async getTransaction (hash) {
+    const transfers = await this._client.getTransfersByIds([hash])
+
+    if (transfers.length === 0) {
+      throw new NoSuchElementError(`No transfer found for '${hash}'.`)
+    }
+
+    const transfer = transfers[0]
+
+    let finality = 'pending'
+    if (transfer.status === TRANSFER_STATUS_COMPLETED) {
+      finality = 'final'
+    } else if (transfer.status === TRANSFER_STATUS_EXPIRED || transfer.status === TRANSFER_STATUS_RETURNED) {
+      finality = 'dropped'
+    }
+
+    return {
+      hash,
+      finality,
+      success: finality === 'final' ? true : undefined,
+      fee: 0n,
+      transfer
+    }
+  }
+
+  /**
+   * Blocks until a transaction reaches a terminal state (the requested finality target or `dropped`), or times out.
+   *
+   * Note: an expired or returned transfer resolves to a `dropped` receipt; a genuinely
+   * unknown transfer id stays not-found and results in a {@link TimeoutError}.
+   *
+   * @param {string} hash - The Spark transfer's ID.
+   * @param {WaitForTransactionOptions} [options] - The wait options.
+   * @returns {Promise<TransactionReceipt & SparkTransactionDetails>} The terminal receipt: the finality target reached (inspect `success` to tell success from revert), or `dropped`.
+   * @throws {TimeoutError} If the target is not reached before the timeout.
+   */
+  async waitForTransaction (hash, options = {}) {
+    return await super.waitForTransaction(hash, options)
   }
 
   /**

@@ -1,5 +1,6 @@
 import { describe, beforeEach, expect, jest, test } from '@jest/globals'
 import * as sparkSdk from '#libs/spark-sdk'
+import { NoSuchElementError } from '@tetherto/wdk-wallet'
 
 const ADDRESS = 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47'
 
@@ -154,6 +155,63 @@ describe('WalletAccountReadOnlySpark', () => {
 
       expect(mockClient.getTransfersByIds).toHaveBeenCalledWith([DUMMY_TRANSFER_ID])
       expect(receipt).toBe(null)
+    })
+  })
+
+  describe('getTransaction', () => {
+    const DUMMY_TRANSFER_ID = 'dummy-transfer-id'
+
+    test('should throw NoSuchElementError when the transfer is not known', async () => {
+      mockClient.getTransfersByIds.mockResolvedValue([])
+
+      await expect(account.getTransaction(DUMMY_TRANSFER_ID)).rejects.toThrow(NoSuchElementError)
+      expect(mockClient.getTransfersByIds).toHaveBeenCalledWith([DUMMY_TRANSFER_ID])
+    })
+
+    test('should report pending for an in-progress transfer', async () => {
+      const transfer = { id: DUMMY_TRANSFER_ID, status: 1 }
+      mockClient.getTransfersByIds.mockResolvedValue([transfer])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(info).toMatchObject({
+        hash: DUMMY_TRANSFER_ID,
+        finality: 'pending',
+        success: undefined,
+        fee: 0n,
+        transfer
+      })
+    })
+
+    test('should report final and successful for a completed transfer', async () => {
+      const transfer = { id: DUMMY_TRANSFER_ID, status: 5 }
+      mockClient.getTransfersByIds.mockResolvedValue([transfer])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(info).toMatchObject({
+        finality: 'final',
+        success: true,
+        transfer
+      })
+    })
+
+    test('should report dropped for an expired transfer', async () => {
+      mockClient.getTransfersByIds.mockResolvedValue([{ id: DUMMY_TRANSFER_ID, status: 6 }])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(info.finality).toBe('dropped')
+      expect(info.success).toBeUndefined()
+    })
+
+    test('should report dropped for a returned transfer', async () => {
+      mockClient.getTransfersByIds.mockResolvedValue([{ id: DUMMY_TRANSFER_ID, status: 7 }])
+
+      const info = await account.getTransaction(DUMMY_TRANSFER_ID)
+
+      expect(info.finality).toBe('dropped')
+      expect(info.success).toBeUndefined()
     })
   })
 
