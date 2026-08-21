@@ -13,6 +13,8 @@
 // limitations under the License.
 'use strict'
 
+import { UnsupportedOperationError } from '@tetherto/wdk-wallet'
+
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
 import { SparkWallet, Network } from '#libs/spark-sdk'
@@ -204,9 +206,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {SparkTransaction} tx - The transaction.
    * @returns {Promise<never>} Never resolves; always throws.
+   * @throws {UnsupportedOperationError} Always — spark transfers cannot be signed locally.
    */
   async signTransaction (tx) {
-    throw new Error("Method 'signTransaction(tx)' not supported on spark.")
+    throw new UnsupportedOperationError('signTransaction(tx)')
   }
 
   /**

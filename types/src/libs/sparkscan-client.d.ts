@@ -3,6 +3,7 @@ export class SparkScanClient {
      * Creates a new sparkscan client.
      *
      * @param {SparkScanConfig} config
+     * @throws {ValueError} If the configured network is not supported by sparkscan.
      */
     constructor(config?: SparkScanConfig);
     _baseUrl: string;
