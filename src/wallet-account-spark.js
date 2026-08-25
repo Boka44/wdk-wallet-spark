@@ -176,6 +176,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * Returns the account's total (available + locked in outgoing transfer) bitcoin balance.
    *
    * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
+   * @throws {ProviderError} If a sparkscan client is configured and sparkscan responds with an error status.
    */
   async getBalance () {
     if (this._sparkscan) {

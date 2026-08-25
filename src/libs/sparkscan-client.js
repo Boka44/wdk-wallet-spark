@@ -130,6 +130,7 @@ export class SparkScanClient {
    * @see https://docs.sparkscan.io/api/address#get-v1-address-by-address
    * @param {string} address Spark address
    * @returns {Promise<AddressInfo>} Account information
+   * @throws {ProviderError} If sparkscan responds with an error status.
    */
   async getAddressInfo (address) {
     return this._request(`/v1/address/${address}`)
